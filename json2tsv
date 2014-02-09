@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 
 import sys, getopt, json
+from types import NoneType
 
 def usage(name):
-  print 'Usage: %s -l [key1:key2] -o [field1] -o [field2] ... -o [fieldN]' % name
+  print 'Usage: %s -l [key1:key2] -t [text1] -f [field1] -f [field2] ... -t [textN] -f [fieldN]' % name
 
 def main(argv):
   fields = []
   nodeAddr = ''
   try:
-    opts, args = getopt.getopt(argv[1:],'hl:o:')
+    opts, args = getopt.getopt(argv[1:],'hl:f:t:')
   except getopt.GetoptError:
     usage(argv[0])
     sys.exit(2)
@@ -17,8 +18,10 @@ def main(argv):
     if opt in ('-h'):
       usage(argv[0])
       sys.exit()
-    elif opt in ('-o'):
-      fields.append(arg)
+    elif opt in ('-f'):
+      fields.append(['f', arg])
+    elif opt in ('-t'):
+      fields.append(['t', arg])
     elif opt in ('-l'):
       nodeAddr = arg
   if not nodeAddr or not fields:
@@ -41,12 +44,23 @@ def main(argv):
   for i in data:
     line = []
     for j in fields:
-      if j in i.keys():
-        line.append(i[j].replace('\t', ' '))
-      else:
-        print 'Err: unable to find a field "%s"' % j
-        sys.exit(1)
-    print '\t'.join(line)
+      if j[0] is 't':
+        line.append(j[1])
+      elif j[0] is 'f':
+        if j[1] in i.keys():
+          if isinstance(i[j[1]], unicode):
+            hay = i[j[1]].replace('\t', ' ')
+          elif isinstance(i[j[1]], (int, float)):
+            hay = str(i[j[1]])
+          elif isinstance(i[j[1]], NoneType):
+            hay = 'NULL'
+          else:
+            hay = i[j[1]]
+          line.append(hay)
+        else:
+          print 'Err: unable to find a field "%s"' % j
+          sys.exit(1)
+    print u'\t'.join(line).encode('utf-8')
   sys.exit()
 
 if __name__ == "__main__":
